@@ -38,7 +38,9 @@ fn main() {
     hasher.input(b"TEST");
     
     let prev_hash: String = hasher.result_str();
-    let transactions: Vec<&'static str> = vec!["Give A 0.1BTC", "Give B 1.5BTC"];
+    let transactions: Vec<&'static str> = vec![
+        "Give A 0.1BTC", "Give B 1.5BTC"
+    ];
 
     let mut rng = rand::thread_rng();
     let mut nonce: u64 = rng.gen::<u64>();

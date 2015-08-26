@@ -7,8 +7,8 @@ use rand::{Rng, ThreadRng};
 use std::mem;
 
 // The number of leading zeros required in hash to reach difficulty target
-const DIFFICULT_ZEROS: [&'static str; 7] = [
-    "0", "07", "03", "00", "007", "003", "000"
+const DIFFICULT_ZEROS: [&'static str; 10] = [
+    "0", "07", "03", "00", "007", "003", "000", "0007", "0003", "0000"
 ];
 
 
@@ -45,13 +45,12 @@ fn main() {
 
     hasher.input(b"PREV HASH");
     let prev_hash: String = hasher.result_str();
-    let mut transactions: Vec<String> = vec![
-        "Give A 0.1BTC".to_owned(), "Give B 1.5BTC".to_owned()
-    ];
-
     let mut rng = rand::thread_rng();
 
     for difficulty in DIFFICULT_ZEROS.iter() {
+        let mut transactions: Vec<String> = vec![
+            "Give A 0.1BTC".to_owned(), "Give B 1.5BTC".to_owned()
+        ];
         let mut nonce: u64 = rng.gen::<u64>();
 
         println!("\n\nDifficulty: {}", difficulty);

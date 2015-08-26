@@ -1,0 +1,8 @@
+[package]
+name = "proof_of_work_example"
+version = "0.0.1"
+authors = ["Eric Scrivner <eric.t.scrivner@gmail.com>"]
+
+[dependencies]
+rust-crypto = "*"
+rand = "*"

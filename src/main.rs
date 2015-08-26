@@ -7,7 +7,9 @@ use rand::{Rng, ThreadRng};
 use std::mem;
 
 // The number of leading zeros required in hash to reach difficulty target
-const DIFFICULT_ZEROS: &'static str = "00";
+const DIFFICULT_ZEROS: [&'static str; 7] = [
+    "0", "07", "03", "00", "007", "003", "000"
+];
 
 
 fn get_hash(nonce: u64,
@@ -28,8 +30,8 @@ fn get_hash(nonce: u64,
 }
 
 
-fn hits_difficulty(hash: &String) -> bool {
-    return hash.starts_with(DIFFICULT_ZEROS);
+fn hits_difficulty(difficulty: &'static str, hash: &String) -> bool {
+    return hash.starts_with(difficulty);
 }
 
 
@@ -40,29 +42,36 @@ fn random_transaction(rng: &mut ThreadRng) -> String {
 
 fn main() {
     let mut hasher = Sha256::new();
-    hasher.input(b"TEST");
-    
+
+    hasher.input(b"PREV HASH");
     let prev_hash: String = hasher.result_str();
     let mut transactions: Vec<String> = vec![
         "Give A 0.1BTC".to_owned(), "Give B 1.5BTC".to_owned()
     ];
 
     let mut rng = rand::thread_rng();
-    let mut nonce: u64 = rng.gen::<u64>();
 
-    loop {
-        let result = get_hash(nonce, &prev_hash, &transactions);
-        
-        if hits_difficulty(&result) {
-            println!("\n[Found Nonce]");
-            println!("Nonce: {}", nonce);
-            println!("# Transactions: {}", transactions.len());
-            println!("{}", result);
-            break;
+    for difficulty in DIFFICULT_ZEROS.iter() {
+        let mut nonce: u64 = rng.gen::<u64>();
+
+        println!("\n\nDifficulty: {}", difficulty);
+
+        loop {
+            let result = get_hash(nonce, &prev_hash, &transactions);
+            
+            if hits_difficulty(&difficulty, &result) {
+                println!("\n[Found Nonce]");
+                println!("Nonce: {}", nonce);
+                println!("# Transactions: {}", transactions.len());
+                println!("{}", result);
+                break;
+            }
+
+            if transactions.len() < 50000 {
+                transactions.extend(vec![random_transaction(&mut rng)]);
+            }
+
+            nonce += 1;
         }
-
-        transactions.extend(vec![random_transaction(&mut rng)]);
-        nonce += 1;
-        println!("{}", nonce);
     }
 }

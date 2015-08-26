@@ -3,7 +3,7 @@ extern crate rand;
 
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
-use rand::Rng;
+use rand::{Rng, ThreadRng};
 use std::mem;
 
 // The number of leading zeros required in hash to reach difficulty target
@@ -12,7 +12,7 @@ const DIFFICULT_ZEROS: &'static str = "00";
 
 fn get_hash(nonce: u64,
             prev_hash: &String,
-            transactions: &Vec<&'static str>) -> String {
+            transactions: &Vec<String>) -> String {
     let mut hasher = Sha256::new();
 
     unsafe {
@@ -33,13 +33,18 @@ fn hits_difficulty(hash: &String) -> bool {
 }
 
 
+fn random_transaction(rng: &mut ThreadRng) -> String {
+    return format!("Give B {} BTC", rng.gen::<f64>().to_string());
+}
+
+
 fn main() {
     let mut hasher = Sha256::new();
     hasher.input(b"TEST");
     
     let prev_hash: String = hasher.result_str();
-    let transactions: Vec<&'static str> = vec![
-        "Give A 0.1BTC", "Give B 1.5BTC"
+    let mut transactions: Vec<String> = vec![
+        "Give A 0.1BTC".to_owned(), "Give B 1.5BTC".to_owned()
     ];
 
     let mut rng = rand::thread_rng();
@@ -50,11 +55,13 @@ fn main() {
         
         if hits_difficulty(&result) {
             println!("\n[Found Nonce]");
-            println!("nonce: {}", nonce);
+            println!("Nonce: {}", nonce);
+            println!("# Transactions: {}", transactions.len());
             println!("{}", result);
             break;
         }
 
+        transactions.extend(vec![random_transaction(&mut rng)]);
         nonce += 1;
         println!("{}", nonce);
     }

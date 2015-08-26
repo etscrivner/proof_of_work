@@ -27,9 +27,9 @@ fn main() {
             }
             let result = hasher.result_str();
             if result.starts_with("07") {
-                println!("FOUND NONCE");
-                println!("NONCE: {}", nonce);
-                println!("HASH: {}", result);
+                println!("\n[Found Nonce]");
+                println!("nonce: {}", nonce);
+                println!("{}", result);
                 break;
             }
         }

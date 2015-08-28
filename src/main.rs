@@ -5,16 +5,11 @@ use crypto::digest::Digest;
 use crypto::sha2::Sha256;
 use rand::{Rng, ThreadRng};
 use std::mem;
-
-// The number of leading zeros required in hash to reach difficulty target
-const DIFFICULT_ZEROS: [&'static str; 10] = [
-    "0", "07", "03", "00", "007", "003", "000", "0007", "0003", "0000"
-];
-
+use std::iter::repeat;
 
 fn get_hash(nonce: u64,
             prev_hash: &String,
-            transactions: &Vec<String>) -> String {
+            transactions: &Vec<String>) -> Box<Sha256> {
     let mut hasher = Sha256::new();
 
     unsafe {
@@ -26,12 +21,19 @@ fn get_hash(nonce: u64,
         hasher.input(each.as_bytes());
     }
 
-    return hasher.result_str();
+    return Box::new(hasher);
 }
 
 
-fn hits_difficulty(difficulty: &'static str, hash: &String) -> bool {
-    return hash.starts_with(difficulty);
+fn get_hasher_bytes(hasher: Box<Sha256>) -> Vec<u8> {
+    let mut buf: Vec<u8> = repeat(0).take((hasher.output_bits() + 7) / 8).collect();
+    let mut unboxed_hasher = *hasher;
+    unboxed_hasher.result(&mut buf);
+    return buf;
+}
+
+fn hits_difficulty(hash: &mut [u8]) -> bool {
+    return (hash[0] == 0x00) && (hash[1] & 0xF0 == 0x00);
 }
 
 
@@ -47,30 +49,29 @@ fn main() {
     let prev_hash: String = hasher.result_str();
     let mut rng = rand::thread_rng();
 
-    for difficulty in DIFFICULT_ZEROS.iter() {
-        let mut transactions: Vec<String> = vec![
-            "Give A 0.1BTC".to_owned(), "Give B 1.5BTC".to_owned()
-        ];
-        let mut nonce: u64 = rng.gen::<u64>();
+    let mut transactions: Vec<String> = vec![
+        "Give A 0.1BTC".to_owned(), "Give B 1.5BTC".to_owned()
+            ];
+    let mut nonce: u64 = rng.gen::<u64>();
 
-        println!("\n\nDifficulty: {}", difficulty);
-
-        loop {
-            let result = get_hash(nonce, &prev_hash, &transactions);
-            
-            if hits_difficulty(&difficulty, &result) {
-                println!("\n[Found Nonce]");
-                println!("Nonce: {}", nonce);
-                println!("# Transactions: {}", transactions.len());
-                println!("{}", result);
-                break;
-            }
-
-            if transactions.len() < 50000 {
-                transactions.extend(vec![random_transaction(&mut rng)]);
-            }
-
-            nonce += 1;
+    loop {
+        let hasher = get_hash(nonce, &prev_hash, &transactions);
+        let mut unboxed_hasher = *hasher;
+        let hash_str = unboxed_hasher.result_str();
+        let mut bytes = get_hasher_bytes(hasher);
+        
+        if hits_difficulty(&mut bytes) {
+            println!("\n[Found Nonce]");
+            println!("Nonce: {}", nonce);
+            println!("# Transactions: {}", transactions.len());
+            println!("{}", hash_str);
+            break;
         }
+
+        if transactions.len() < 50000 {
+            transactions.extend(vec![random_transaction(&mut rng)]);
+        }
+
+        nonce += 1;
     }
 }
